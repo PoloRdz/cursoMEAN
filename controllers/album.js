@@ -11,7 +11,7 @@ var songModel = require('../models/song');
 function getAlbum(req, res){
     var albumId = req.params.id;
 
-    albumModel.findById(albumId, (err, album) => {
+    albumModel.findById(albumId).populate({path: 'artist'}).exec((err, album) => {
         if(err){
             res.status(500).send({message: 'Error en la petición'});
         } else{
@@ -25,25 +25,21 @@ function getAlbum(req, res){
 }
 
 function getAlbums(req, res){
-    if(req.params.page){
-        var page = req.params.page;
-    } else{
-        var page = 1;
-    }
-    
-    var itemsPerPage = 3;
+    var artistId = req.params.artist;
 
-    albumModel.find().sort('title').paginate(page, itemsPerPage, function(err, albums, total){
+    if(!artistId){
+        var find = albumModel.find({}).sort('title');
+    } else {
+        var find = albumModel.find({artist: artistId}).sort('year');
+    }
+    find.populate({path: 'artist'}).exec((err, albums) => {
         if(err){
             res.status(500).send({message: 'Error en la peticion'});
         } else{
             if(!albums){
                 res.status(404).send({message: 'No hay albums'});
             } else{
-                return res.status(200).send({
-                    total_items: total,
-                    albums: albums
-                });
+                return res.status(200).send({ albums: albums });
             }
         }
     });
@@ -53,11 +49,11 @@ function saveAlbum(req, res){
     var album = new albumModel();
 
     var params = req.body;
-    album.title = params.name;
+    album.title = params.title;
     album.description = params.description;
-    album.image = 'null';
     album.year = params.year;
-
+    album.image = 'null';
+    album.artist = params.artist;
     album.save((err, albumStored) => {
         if(err){
             res.status(500).send({message: 'Error al guardar'})
@@ -71,61 +67,51 @@ function saveAlbum(req, res){
     });
 }
 
-function updateArtist(req, res){
-    var artistId = req.params.id;
+function updateAlbum(req, res){
+    var albumId = req.params.id;
     var update = req.body;
 
-    artistModel.findByIdAndUpdate(artistId, update, (err, artistUpdated) => {
+    albumModel.findByIdAndUpdate(albumId, update, (err, albumUpdated) => {
         if(err){
             res.status(500).send({message: 'Error al guardar el artista'});
         } else{
-            if(!artistUpdated){
-                res.status(404).send({message: 'Esl artista no existe'});
+            if(!albumUpdated){
+                res.status(404).send({message: 'El album no existe'});
             } else{
-                res.status(200).send({artist: artistUpdated});
+                res.status(200).send({album: albumUpdated});
             }
         }
     });
 }
 
-function deleteArtist(req, res){
-    var artistId = req.params.id;
+function deleteAlbum(req, res){
+    var albumId = req.params.id;
 
-    artistModel.findByIdAndRemove(artistId,  (err, artistRemoved) => {
+    albumModel.findByIdAndDelete(albumId, (err, albumRemoved)=>{
         if(err){
-            res.status(500).send({message: 'Error al eliminar el artista'});
+            res.status(500).send({message: 'Error al eliminar el album'});
         } else{
-            if(!artistRemoved){
-                res.status(404).send({message: 'El artista no ha sido eliminado'});
+            if(!albumRemoved){
+                res.status(404).send({message: 'El album no ha sido eliminado'});
             } else{
-                albumModel.find({artist: artistRemoved._id}).remove((err, albumRemoved)=>{
+                songModel.find({album: albumRemoved._id}).remove((err, songRemoved)=>{
                     if(err){
-                        res.status(500).send({message: 'Error al eliminar el album'});
+                        res.status(500).send({message: 'Error al eliminar la canción'});
                     } else{
-                        if(!albumRemoved){
-                            res.status(404).send({message: 'El album no ha sido eliminado'});
+                        if(!songRemoved){
+                            res.status(404).send({message: 'La canción no ha sido eliminada'});
                         } else{
-                            songModel.find({album: albumRemoved._id}).remove((err, songRemoved)=>{
-                                if(err){
-                                    res.status(500).send({message: 'Error al eliminar la canción'});
-                                } else{
-                                    if(!songRemoved){
-                                        res.status(404).send({message: 'La canción no ha sido eliminada'});
-                                    } else{
-                                        res.status(200).send({artist: artistRemoved});
-                                    }
-                                } 
-                            });
+                            res.status(200).send({album: albumRemoved});
                         }
                     } 
                 });
             }
-        }
+        } 
     });
 }
 
 function uploadImage(req, res){
-    var artistId = req.params.id;
+    var albumId = req.params.id;
     var file_name = 'No subido...'
 
     if(req.files){
@@ -137,11 +123,11 @@ function uploadImage(req, res){
         var ext_split = file_name.split('\.');
         var file_ext = ext_split[1];
         if(file_ext == 'png' || file_ext == 'jpg' || file_ext == 'gif' || file_ext == 'jfif'){
-            artistModel.findByIdAndUpdate(artistId, {image: file_name}, (err, artistUpdated) => {
-                if(!artistUpdated){
-                    res.status(404).send({message: 'No se ha podido actualizar el artista'});
+            albumModel.findByIdAndUpdate(albumId, {image: file_name}, (err, albumUpdated) => {
+                if(!albumUpdated){
+                    res.status(404).send({message: 'No se ha podido actualizar el album'});
                 } else{
-                    res.status(200).send({artist: artistUpdated});
+                    res.status(200).send({album: albumUpdated});
                 }
             });
         } else{
@@ -156,7 +142,7 @@ function uploadImage(req, res){
 
 function getImageFile(req, res){
     var imageFile = req.params.imageFile;
-    var pathFile = './uploads/artists/' + imageFile;
+    var pathFile = './uploads/albums/' + imageFile;
     fs.exists(pathFile, function(exists){
         if(exists){
             res.sendFile(path.resolve(pathFile));
@@ -171,8 +157,8 @@ module.exports = {
     getAlbum,
     saveAlbum,
     getAlbums,
-    updateArtist,
-    deleteArtist,
+    updateAlbum,
+    deleteAlbum,
     uploadImage,
     getImageFile
 };

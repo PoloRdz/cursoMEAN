@@ -20,6 +20,6 @@ app.use(bodyParser.json());
 app.use('/api', user_routes);
 app.use('/api', artist_routes);
 app.use('/api', album_routes);
-app.use('./api', song_routes);
+//app.use('./api', song_routes);
 
 module.exports = app; 
