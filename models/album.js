@@ -8,7 +8,6 @@ var albumSchema = Schema({
     description: String,
     image: String,
     year: Number,
-    image: String,
     artist: {type: Schema.ObjectId, ref:'Artist'}
 });
 
