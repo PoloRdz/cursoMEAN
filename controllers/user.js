@@ -60,18 +60,15 @@ function login(req, res){
             res.status(500).send({message:'Error en la peticion'});
         } else{
             if(!user){
-                res.status(400).send({message: 'El usuario no existe'});
+                res.status(404).send({message: 'El usuario no existe'});
 
             } else{
                 bcrypt.compare(password, user.password, function(err, check){
                     if(check){
-                        if(params.gethash){
-                            res.status(200).send({
-                                token: jwt.createToken(user)
-                            });
-                        } else{
-                            res.status(200).send({user});
-                        }
+                        res.status(200).send({
+                            user,
+                            token: jwt.createToken(user)
+                        });
                     } else{
                         res.status(404).send({message: 'Contraseña incorrecta'});
                     }

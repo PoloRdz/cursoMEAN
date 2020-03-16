@@ -8,10 +8,12 @@ var songModel = require('../models/song');
 function getSong(req, res){
     var songId = req.params.id;
 
-    songModel.findById(songId).populate({path: 'album',
-    populate: {
-        path: 'artist',
-        model: 'Artist'}).exec((err, song) => {
+    songModel.findById(songId).populate({
+        path: 'album', populate: {
+            path: 'artist',
+            model: 'Artist'
+        }
+    }).exec((err, song) => {
         if(err){
             res.status(500).send({message: 'Error en la petición'});
         } else{
@@ -21,6 +23,7 @@ function getSong(req, res){
                 res.status(200).send({song: song});
             }
         }
+    
     });
 }
 
