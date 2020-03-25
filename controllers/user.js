@@ -61,12 +61,11 @@ function login(req, res){
         } else{
             if(!user){
                 res.status(404).send({message: 'El usuario no existe'});
-
             } else{
                 bcrypt.compare(password, user.password, function(err, check){
                     if(check){
                         res.status(200).send({
-                            user,
+                            user: user,
                             token: jwt.createToken(user)
                         });
                     } else{
@@ -82,22 +81,21 @@ function updateUser(req, res){
     var userId = req.params.id;
     var update = req.body;
 
-    userModel.findByIdAndUpdate(userId, update, (err, userUpdated) => {
-        if(err){
-            res.status(500).send({message: 'Error al actualizar el usuario'});
-        } else{
-            if(!userUpdated){
-                res.status(404).send({message: 'No se ha podido actualizar el usuario'});
-            } else{
-                res.status(200).send({user: userUpdated});
-            }
-        }
+    if(userId != req.user.sub){
+        return res.status(500).send({message: 'No tienes permiso para actualizar este usuario'});
+    }
+
+    userModel.findByIdAndUpdate(userId, update).then(function(userUpdated){
+        res.status(200).send({user: userUpdated});
+    })
+    .catch(function(err){
+        res.status(500).send({message: 'Error al actualizar el usuario'});
     });
 }
 
 function uploadImage(req, res){
     var userId = req.params.id;
-    var file_name = 'No subido...';
+    var file_name = '';
     if(req.files){
 
         var file_path = req.files.image.path;
