@@ -4,7 +4,7 @@ var mongoose = require('mongoose');
 var app = require("./app");
 var port = process.env.port || 3977;
 
-mongoose.connect('mongodb://localhost:27017/curso_mean2', (err, res) =>{
+mongoose.connect('mongodb+srv://apiUsr:Amonos123@cluster0-ycxpl.mongodb.net/test?retryWrites=true&w=majority', (err, res) =>{
     if(err){
         throw err;
     } else {
